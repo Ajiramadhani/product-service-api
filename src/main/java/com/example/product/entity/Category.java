@@ -20,9 +20,9 @@ public class Category extends BaseEntity {
     @Column(name = "id_category_product")
     private Long idCategoryProduct;
 
-    @Column(name = "category_name")
+    @Column(name = "category_name", nullable = false)
     private String categoryName;
 
-    @Column(name = "category_code", length = 10, unique = true)
+    @Column(name = "category_code", length = 10, unique = true, nullable = false)
     private String categoryCode;
 }

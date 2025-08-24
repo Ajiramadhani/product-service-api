@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/category")
 public class CategoryController {
 
     @Autowired
@@ -67,5 +67,11 @@ public class CategoryController {
     public ResponseEntity<Response> searchByCode(@RequestBody CategorySearchRequest request){
         Response response = categoryService.searchByCode(request);
         return ResponseEntity.ok(response);
+
     }
+
+//    public ResponseEntity<Response> searchByCode(@RequestParam String categoryCode){
+//        Response response = categoryService.searchByCode(categoryCode);
+//        return ResponseEntity.ok(response);
+//    }
 }

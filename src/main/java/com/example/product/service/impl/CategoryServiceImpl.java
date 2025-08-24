@@ -146,6 +146,37 @@ public class CategoryServiceImpl implements CategoryService {
 //            response.setData(null);
 //            return response;
 //        }
+//    } 
+
+//    @Override
+//    public Response searchByCode(String categoryCode){
+//
+//        log.info("[START - searchByCode]");
+//        Response response = new Response();
+//
+//        if (categoryCode == null || categoryCode.trim().isEmpty()) {
+//            log.warn("Category code is null");
+//            throw new IllegalArgumentException("Category code must not be empty");
+//        }
+//
+//
+//            Category existingCategory = categoryRepository.findByCategoryCode(categoryCode);
+//            if (existingCategory == null) {
+//                throw new RuntimeException("Category Code not found");
+//            }
+//
+//            CategoryResponse categoryItemResponse = CategoryResponse.builder()
+//                    .idCategoryProduct(existingCategory.getIdCategoryProduct())
+//                    .categoryCode(existingCategory.getCategoryCode().trim())
+//                    .categoryName(existingCategory.getCategoryName())
+//                    .build();
+//
+//            response.setStatus(String.valueOf(HttpStatus.OK));
+//            response.setMessage("Success");
+//            response.setData(List.of(categoryItemResponse));
+//
+//            log.info("[END - searchByCode]");
+//            return response;
 //    }
 
     @Override
@@ -158,10 +189,6 @@ public class CategoryServiceImpl implements CategoryService {
 
             Category existingCategory = categoryRepository.findByCategoryCode(categoryCode);
             if (existingCategory == null) {
-//                response.setStatus(String.valueOf(HttpStatus.NOT_FOUND));
-//                response.setMessage("Category Code not found");
-//                response.setData(null);
-//                return response;
                 throw new RuntimeException("Category Code not found");
             }
 
