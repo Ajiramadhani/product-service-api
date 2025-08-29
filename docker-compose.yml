@@ -34,7 +34,7 @@ services:
       MYSQL_PASSWORD: root
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3307:3306"  # ganti port external jika perlu
+      - "3306:3306"  # ganti port external jika perlu
     volumes:
       - mysql_data_new:/var/lib/mysql  # ganti nama volume
     networks:
@@ -44,7 +44,7 @@ services:
     image: redis:8.2.1-alpine
     container_name: myredis-new  # ganti nama container
     ports:
-      - "6380:6379"  # ganti port external
+      - "6379:6379"  # ganti port external
     volumes:
       - redis_data_new:/data  # ganti nama volume
     networks:
@@ -57,8 +57,8 @@ services:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: root
     ports:
-      - "5673:5672"  # ganti port external
-      - "15673:15672"  # ganti port management UI
+      - "5672:5672"  # ganti port external
+      - "15672:15672"  # ganti port management UI
     volumes:
       - rabbitmq_data_new:/var/lib/rabbitmq  # ganti nama volume
     networks:
