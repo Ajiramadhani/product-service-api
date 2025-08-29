@@ -8,23 +8,20 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'master',
-                url: 'https://github.com/Ajiramadhani/product-service-api.git'
+                // Gunakan checkout step yang berbeda
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/master']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/Ajiramadhani/product-service-api.git'
+                    ]]
+                ])
             }
         }
 
         stage('Build Application') {
             steps {
                 sh 'mvn clean package -DskipTests'
-            }
-        }
-
-        stage('Stop Old Containers') {
-            steps {
-                sh '''
-                    $DOCKER_COMPOSE down || true
-                    docker rm -f product-api myredis myrabbitmq mysqlserver1 || true
-                '''
             }
         }
 
@@ -46,13 +43,6 @@ pipeline {
     post {
         always {
             cleanWs()
-        }
-        success {
-            echo '🎉 CI/CD Pipeline Success!'
-        }
-        failure {
-            echo '❌ Pipeline Failed!'
-            sh '$DOCKER_COMPOSE down || true'
         }
     }
 }
