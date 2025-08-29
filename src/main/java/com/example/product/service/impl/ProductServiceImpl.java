@@ -3,6 +3,7 @@ package com.example.product.service.impl;
 import com.example.product.dto.Response;
 import com.example.product.dto.category.CategoryRequest;
 import com.example.product.dto.category.CategoryResponse;
+import com.example.product.dto.inventory.InventoryEvent;
 import com.example.product.dto.product.ProductRequest;
 import com.example.product.dto.product.ProductResponse;
 import com.example.product.entity.Category;
@@ -11,6 +12,7 @@ import com.example.product.repository.ProductRepository;
 import com.example.product.service.ProductService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
 
     @Override
@@ -54,35 +59,123 @@ public class ProductServiceImpl implements ProductService {
         return response;
     }
 
+//    @Override
+//    public Response createProduct(ProductRequest productRequest) {
+//        log.info("[START - createProduct]");
+//        Response response = new Response();
+//
+//        try {
+//            Product product = new Product();
+//            product.setCodeProduct(productRequest.getCodeProduct());
+//            product.setProductName(productRequest.getProductName());
+//            product.setDescription(productRequest.getDescription());
+//            product.setPrice(productRequest.getPrice());
+//            product.setPhotoProduct(product.getPhotoProduct());
+//            product.setThumbnailProduct(product.getThumbnailProduct());
+//            product.setCategoryCode(productRequest.getCategoryCode());
+//
+//            Product savedProduct =  productRepository.save(product);
+//
+//            InventoryEvent event = new InventoryEvent(
+//                    savedProduct.getProductId(),
+//                    0,
+//                    "CREATE"
+//            );
+//
+//            rabbitTemplate.convertAndSend(
+//                    "inventory.exchange",
+//                    "inventory.update",
+//                    "CREATE"
+//            );
+//
+//            log.info("Inventory event sent for product ID: {}", savedProduct.getProductId());
+//
+//            response.setStatus(String.valueOf(HttpStatus.OK));
+//            response.setMessage("Success");
+//            response.setData(productRequest);
+//            log.info("[END - createProduct]");
+//            return response;
+//        } catch (Exception ex) {
+//            log.error("[createProduct] Error : {}", ex.getMessage(), ex);
+//            response.setStatus(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR));
+//            response.setMessage(ex.getMessage());
+//            response.setData(null);
+//            return response;
+//        }
+//    }
+
     @Override
     public Response createProduct(ProductRequest productRequest) {
         log.info("[START - createProduct]");
         Response response = new Response();
 
         try {
+            // Validasi input
+            if (productRequest.getCodeProduct() == null || productRequest.getCodeProduct().isEmpty()) {
+                throw new RuntimeException("Product code is required");
+            }
+
+            // Cek duplicate product code
+            if (productRepository.existsByCodeProduct(productRequest.getCodeProduct())) {
+                throw new RuntimeException("Product with code " + productRequest.getCodeProduct() + " already exists");
+            }
+
             Product product = new Product();
             product.setCodeProduct(productRequest.getCodeProduct());
             product.setProductName(productRequest.getProductName());
             product.setDescription(productRequest.getDescription());
             product.setPrice(productRequest.getPrice());
-            product.setPhotoProduct(product.getPhotoProduct());
-            product.setThumbnailProduct(product.getThumbnailProduct());
+            product.setPhotoProduct(productRequest.getPhotoProduct());
+            product.setThumbnailProduct(productRequest.getThumbnailProduct());
             product.setCategoryCode(productRequest.getCategoryCode());
 
-            productRepository.save(product);
+            Product savedProduct = productRepository.save(product);
 
-            response.setStatus(String.valueOf(HttpStatus.OK));
-            response.setMessage("Success");
-            response.setData(productRequest);
-            log.info("[END - createProduct]");
+            // Send inventory creation event to RabbitMQ
+            try {
+                InventoryEvent event = new InventoryEvent(
+                        savedProduct.getProductId(), // Pastikan gunakan field yang benar
+                        0,  // Initial quantity 0
+                        "CREATE"
+                );
+
+                rabbitTemplate.convertAndSend(
+                        "inventory.exchange",
+                        "inventory.update",
+                        event
+                );
+
+                log.info("Inventory event sent for product ID: {}", savedProduct.getProductId());
+            } catch (Exception e) {
+                log.warn("Failed to send RabbitMQ event: {}", e.getMessage());
+                // Jangan throw error, continue proses
+            }
+
+            response.setStatus(String.valueOf(HttpStatus.OK.value()));
+            response.setMessage("Product created successfully");
+            response.setData(convertToProductResponse(savedProduct));
+
+            log.info("[END - createProduct] - Product created: {}", savedProduct.getCodeProduct());
             return response;
         } catch (Exception ex) {
-            log.error("[createProduct] Error : {}", ex.getMessage(), ex);
-            response.setStatus(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR));
+            log.error("[createProduct] Error: {}", ex.getMessage(), ex);
+            response.setStatus(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()));
             response.setMessage(ex.getMessage());
             response.setData(null);
             return response;
         }
+    }
+
+    private ProductResponse convertToProductResponse(Product product) {
+        return ProductResponse.builder()
+                .idProduct(product.getProductId())
+                .productName(product.getProductName())
+                .productCode(product.getCodeProduct())
+                .categoryCode(product.getCategoryCode())
+                .description(product.getDescription())
+                .price(product.getPrice())
+                .photoProduct(product.getPhotoProduct())
+                .build();
     }
 
     @Override

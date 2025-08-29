@@ -14,7 +14,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -155,6 +160,28 @@ public class ProductController {
 
         log.info("HTTP RESPONSE : {}", HttpStatus.OK);
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping("/upload")
+    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+
+        // 1. Check if file is empty
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body("File is empty");
+        }
+
+        try {
+            // 2. Save the file (simple version)
+            String fileName = file.getOriginalFilename();
+            Path path = Paths.get("uploads/" + fileName);
+            Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+
+            // 3. Return success
+            return ResponseEntity.ok("File uploaded: " + fileName);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Upload failed: " + e.getMessage());
+        }
     }
 
 }
