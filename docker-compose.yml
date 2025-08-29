@@ -25,7 +25,7 @@ services:
     networks:
       - app-network
 
-  mysql-new:  # ganti nama service
+  mysql-new: # ganti nama service
     image: mysql:latest
     container_name: mysqlserver1-new  # ganti nama container
     environment:
