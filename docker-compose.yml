@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  product-service:
+    build: .
+    container_name: product-api-new  # tambah identifier
+    ports:
+      - "9014:9014"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-new:3306/productservice?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_REDIS_HOST=redis-new
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_PASSWORD=Qwe123
+      - SPRING_RABBITMQ_HOST=rabbitmq-new
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=root
+    depends_on:
+      - mysql-new
+      - redis-new
+      - rabbitmq-new
+    networks:
+      - app-network
+
+  mysql-new:  # ganti nama service
+    image: mysql:latest
+    container_name: mysqlserver1-new  # ganti nama container
+    environment:
+      MYSQL_DATABASE: productservice
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"  # ganti port external jika perlu
+    volumes:
+      - mysql_data_new:/var/lib/mysql  # ganti nama volume
+    networks:
+      - app-network
+
+  redis-new:  # ganti nama service
+    image: redis:8.2.1-alpine
+    container_name: myredis-new  # ganti nama container
+    ports:
+      - "6380:6379"  # ganti port external
+    volumes:
+      - redis_data_new:/data  # ganti nama volume
+    networks:
+      - app-network
+
+  rabbitmq-new:  # ganti nama service
+    image: rabbitmq:4.0-management
+    container_name: myrabbitmq-new  # ganti nama container
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: root
+    ports:
+      - "5673:5672"  # ganti port external
+      - "15673:15672"  # ganti port management UI
+    volumes:
+      - rabbitmq_data_new:/var/lib/rabbitmq  # ganti nama volume
+    networks:
+      - app-network
+
+volumes:
+  mysql_data_new:
+  redis_data_new:
+  rabbitmq_data_new:
+
+networks:
+  app-network:
+    driver: bridge
