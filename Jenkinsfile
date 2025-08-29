@@ -1,39 +1,43 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_COMPOSE = '/usr/local/bin/docker-compose'
-    }
-
     stages {
+        // STAGE 1: Download code dari GitHub
         stage('Checkout Code') {
             steps {
-                // Gunakan checkout step yang berbeda
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/master']],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/Ajiramadhani/product-service-api.git'
-                    ]]
-                ])
+                git branch: 'master',
+                url: 'https://github.com/Ajiramadhani/product-service-api.git'
             }
         }
 
+        // STAGE 2: Build aplikasi dengan Maven
         stage('Build Application') {
             steps {
                 sh 'mvn clean package -DskipTests'
             }
         }
 
-        stage('Docker Compose Up') {
+        // STAGE 3: Stop container lama (jika ada)
+        stage('Stop Old Containers') {
             steps {
-                sh '$DOCKER_COMPOSE up -d --build'
+                sh '''
+                    docker-compose down || true
+                    docker rm -f product-api myredis myrabbitmq mysqlserver1 || true
+                '''
             }
         }
 
+        // STAGE 4: Build dan jalankan dengan Docker Compose
+        stage('Docker Compose Up') {
+            steps {
+                sh 'docker-compose up -d --build'
+            }
+        }
+
+        // STAGE 5: Tunggu dan test aplikasi
         stage('Health Check') {
             steps {
-                sleep 30
+                sleep 30  // tunggu 30 detik
                 sh 'curl -f http://localhost:9014/actuator/health || exit 1'
                 echo '✅ Application is running successfully!'
             }
@@ -42,7 +46,15 @@ pipeline {
 
     post {
         always {
+            echo '🧹 Cleaning up workspace...'
             cleanWs()
+        }
+        success {
+            echo '🎉 CI/CD Pipeline Success!'
+        }
+        failure {
+            echo '❌ Pipeline Failed!'
+            sh 'docker-compose down || true'
         }
     }
 }
