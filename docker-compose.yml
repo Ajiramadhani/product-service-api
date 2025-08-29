@@ -3,7 +3,7 @@ version: '3.8'
 services:
   product-service:
     build: .
-    container_name: product-api-new  # tambah identifier
+    container_name: product-api-new
     ports:
       - "9014:9014"
     environment:
@@ -25,42 +25,44 @@ services:
     networks:
       - app-network
 
-  mysql-new: # ganti nama service
+  mysql-new:
     image: mysql:latest
-    container_name: mysqlserver1-new  # ganti nama container
+    container_name: mysqlserver1-new
     environment:
       MYSQL_DATABASE: productservice
       MYSQL_USER: root
       MYSQL_PASSWORD: root
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3306:3306"  # ganti port external jika perlu
+      - "3306:3306"
     volumes:
-      - mysql_data_new:/var/lib/mysql  # ganti nama volume
+      - mysql_data_new:/var/lib/mysql
+    user: "1000:1000"
+    command: --default-authentication-plugin=mysql_native_password
     networks:
       - app-network
 
-  redis-new:  # ganti nama service
+  redis-new:
     image: redis:8.2.1-alpine
-    container_name: myredis-new  # ganti nama container
+    container_name: myredis-new
     ports:
-      - "6379:6379"  # ganti port external
+      - "6379:6379"
     volumes:
-      - redis_data_new:/data  # ganti nama volume
+      - redis_data_new:/data
     networks:
       - app-network
 
-  rabbitmq-new:  # ganti nama service
+  rabbitmq-new:
     image: rabbitmq:4.0-management
-    container_name: myrabbitmq-new  # ganti nama container
+    container_name: myrabbitmq-new
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: root
     ports:
-      - "5672:5672"  # ganti port external
-      - "15672:15672"  # ganti port management UI
+      - "5672:5672"
+      - "15672:15672"
     volumes:
-      - rabbitmq_data_new:/var/lib/rabbitmq  # ganti nama volume
+      - rabbitmq_data_new:/var/lib/rabbitmq
     networks:
       - app-network
 
