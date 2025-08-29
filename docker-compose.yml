@@ -19,9 +19,12 @@ services:
       - SPRING_RABBITMQ_USERNAME=admin
       - SPRING_RABBITMQ_PASSWORD=root
     depends_on:
-      - mysql-new
-      - redis-new
-      - rabbitmq-new
+      mysql-new:
+        condition: service_healthy
+      redis-new:
+          condition: service_healthy
+      rabbitmq-new:
+          condition: service_healthy
     networks:
       - app-network
 
