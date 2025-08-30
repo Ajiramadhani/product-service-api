@@ -10,16 +10,8 @@ pipeline {
             stage('Checkout') {
                 steps {
                     cleanWs()
-                    // Gunakan checkout dengan konfigurasi explicit
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: '*/master']],
-                        extensions: [],
-                        userRemoteConfigs: [[
-                            url: 'https://github.com/Ajiramadhani/product-service-api.git',
-                            credentialsId: ''
-                        ]]
-                    ])
+                    git branch: 'master',
+                        url: 'https://github.com/Ajiramadhani/product-service-api.git'
                 }
             }
 
