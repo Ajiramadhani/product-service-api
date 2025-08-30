@@ -3,7 +3,7 @@ version: '3.8'
 services:
   product-service:
 #    build: .
-    image: product-service:latest
+    image: product-service:build-${BUILD_NUMBER}
     container_name: product-api-new
     ports:
       - "9014:9014"
