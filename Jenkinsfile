@@ -7,20 +7,32 @@ pipeline {
     }
 
     stages {
-        stage('Build and Deploy') {
-            steps {
-                cleanWs()
-                checkout scm
+            stage('Checkout') {
+                steps {
+                    cleanWs()
+                    // Gunakan checkout dengan konfigurasi explicit
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: '*/master']],
+                        extensions: [],
+                        userRemoteConfigs: [[
+                            url: 'https://github.com/Ajiramadhani/product-service-api.git',
+                            credentialsId: ''
+                        ]]
+                    ])
+                }
+            }
 
-                sh '''
-                    mvn clean package -DskipTests
-                    docker-compose build
-                    docker-compose up -d
-                '''
+            stage('Build and Deploy') {
+                steps {
+                    sh '''
+                        mvn clean package -DskipTests
+                        docker-compose build
+                        docker-compose up -d
+                    '''
+                }
             }
         }
-
-    }
 
     post {
         always {
