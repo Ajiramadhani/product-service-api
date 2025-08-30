@@ -8,17 +8,28 @@ pipeline {
 
     stages {
             stage('Checkout') {
-                steps {
-                    cleanWs()
-                    git branch: 'master',
-                        url: 'https://github.com/Ajiramadhani/product-service-api.git'
-                }
+                        steps {
+                            cleanWs()
+                            sh '''
+                                rm -rf product-service-api
+                                git clone -b master https://github.com/Ajiramadhani/product-service-api.git
+                                cd product-service-api
+                            '''
+                        }
             }
+
+            stage('Build JAR') {
+                        steps {
+                            dir('product-service-api') {
+                                sh 'mvn clean package -DskipTests'
+                            }
+                        }
+                    }
 
             stage('Build and Deploy') {
                 steps {
                     sh '''
-                        mvn clean package -DskipTests
+                        docker-compose down --remove-orphans || true
                         docker-compose build
                         docker-compose up -d
                     '''
