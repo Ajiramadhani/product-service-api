@@ -1,60 +1,47 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_COMPOSE = '/usr/local/bin/docker-compose'
+        COMPOSE_PROJECT_NAME = 'product-service-api'
+    }
+
     stages {
-        // STAGE 1: Download code dari GitHub
-        stage('Checkout Code') {
+        stage('Build and Deploy') {
             steps {
-                git branch: 'master',
-                url: 'https://github.com/Ajiramadhani/product-service-api.git'
-            }
-        }
+                cleanWs()
+                checkout scm
 
-        // STAGE 2: Build aplikasi dengan Maven
-        stage('Build Application') {
-            steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
-
-        // STAGE 3: Stop container lama (jika ada)
-        stage('Stop Old Containers') {
-            steps {
                 sh '''
-                    docker-compose down || true
-                    docker rm -f product-api myredis myrabbitmq mysqlserver1 || true
+                    mvn clean package -DskipTests
+                    docker-compose build
+                    docker-compose up -d
                 '''
             }
         }
 
-        // STAGE 4: Build dan jalankan dengan Docker Compose
-        stage('Docker Compose Up') {
-            steps {
-                sh 'docker-compose up -d --build'
-            }
-        }
-
-        // STAGE 5: Tunggu dan test aplikasi
-        stage('Health Check') {
-            steps {
-                sleep 30  // tunggu 30 detik
-                sh 'curl -f http://localhost:9014/actuator/health || exit 1'
-                echo '✅ Application is running successfully!'
-            }
-        }
     }
 
     post {
         always {
-            echo '🧹 Cleaning up workspace...'
             cleanWs()
         }
-        success {
-            echo '🎉 CI/CD Pipeline Success!'
-        }
         failure {
-            echo '❌ Pipeline Failed!'
-            sh 'docker-compose down || true'
+            echo '❌ Pipeline failed! Running cleanup for NEW containers...'
+
+            sh '''
+                cd product-service-api && docker-compose down --remove-orphans || true
+
+                docker rm -f product-api-new mysqlserver1-new myredis-new myrabbitmq-new || true
+
+                docker network rm product-service-api_app-network || true
+
+                docker volume rm product-service-api_mysql_data_new || true
+                docker volume rm product-service-api_redis_data_new || true
+                docker volume rm product-service-api_rabbitmq_data_new || true
+
+                echo "✅ Cleaned up: product-api-new, mysqlserver1-new, myredis-new, myrabbitmq-new"
+            '''
         }
     }
 }
