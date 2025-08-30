@@ -52,7 +52,7 @@ public class ProductController {
         if (cachedData != null){
             log.info("Returning cached products data");
             Response cachedResponse = (Response) cachedData;
-            cachedResponse.setMessage("Success (from redis)");
+            cachedResponse.setMessage("Success (from REDIS)");
             return ResponseEntity.status(HttpStatus.OK).body(cachedResponse);
         }
         Response response = productService.findAllProduct();
