@@ -1,5 +1,6 @@
 package com.example.product.dto;
 
+import com.example.product.entity.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -14,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({"status", "message", "data"})
-public class Response {
+public class Response extends BaseEntity {
 
     @Schema(description = "HTTP status code", example = "200 OK")
     private String status;

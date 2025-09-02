@@ -1,8 +1,7 @@
 package com.example.product.service.impl;
 
-import com.example.product.dto.inventory.InventoryEvent;
-import com.example.product.dto.inventory.InventoryRequest;
-import com.example.product.dto.inventory.InventoryResponse;
+import com.example.product.dto.Response;
+import com.example.product.dto.inventory.*;
 import com.example.product.entity.Inventory;
 import com.example.product.repository.InventoryRepository;
 import com.example.product.repository.ProductRepository;
@@ -12,7 +11,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -238,5 +240,44 @@ public class InventoryServiceImpl implements InventoryService {
         } catch (Exception e) {
             log.error("❌ Error deleting inventory from event: {}", e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional
+    public Response bulkUpdateInventory(BulkInventoryRequest bulkRequest) {
+        log.info("[START] bulkUpdateInventory - {} operations", bulkRequest.getOperations().size());
+        List<InventoryResponse> results = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        for (int i = 0; i < bulkRequest.getOperations().size(); i++) {
+            InventoryOperation operation = bulkRequest.getOperations().get(i);
+
+            try {
+                InventoryRequest request = new InventoryRequest();
+                request.setProductId(operation.getProductId());
+                request.setQuantity(operation.getQuantity());
+                request.setOperation(operation.getOperation());
+
+                InventoryResponse result = updateInventory(request);
+                results.add(result);
+            } catch (Exception e) {
+                    errors.add("Operation " + (i + 1) + " failed: " + e.getMessage());
+                    log.error("Bulk operation failed for product {}: {}", operation.getProductId(), e.getMessage());
+                }
+            }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("successfulOperations", results);
+        data.put("failedOperations", errors);
+        data.put("totalProcessed", bulkRequest.getOperations().size());
+        data.put("successCount", results.size());
+        data.put("failureCount", errors.size());
+
+        Response response = new Response();
+        response.setStatus("OK");
+        response.setMessage("Success Bulk Update");
+        response.setData(data);
+        log.info("[END] bulkUpdateInventory - {} success, {} failures", results.size(), errors.size());
+        return response;
     }
 }

@@ -1,13 +1,13 @@
 package com.example.product.service.impl;
 
 import com.example.product.dto.Response;
-import com.example.product.dto.category.CategoryRequest;
-import com.example.product.dto.category.CategoryResponse;
 import com.example.product.dto.inventory.InventoryEvent;
+import com.example.product.dto.product.ProductFilter;
 import com.example.product.dto.product.ProductRequest;
 import com.example.product.dto.product.ProductResponse;
-import com.example.product.entity.Category;
+import com.example.product.dto.product.ProductSearch;
 import com.example.product.entity.Product;
+import com.example.product.exception.ProductExceptionHandler;
 import com.example.product.repository.ProductRepository;
 import com.example.product.service.ProductService;
 import jakarta.transaction.Transactional;
@@ -58,51 +58,6 @@ public class ProductServiceImpl implements ProductService {
         log.info("[END - findAllProduct]");
         return response;
     }
-
-//    @Override
-//    public Response createProduct(ProductRequest productRequest) {
-//        log.info("[START - createProduct]");
-//        Response response = new Response();
-//
-//        try {
-//            Product product = new Product();
-//            product.setCodeProduct(productRequest.getCodeProduct());
-//            product.setProductName(productRequest.getProductName());
-//            product.setDescription(productRequest.getDescription());
-//            product.setPrice(productRequest.getPrice());
-//            product.setPhotoProduct(product.getPhotoProduct());
-//            product.setThumbnailProduct(product.getThumbnailProduct());
-//            product.setCategoryCode(productRequest.getCategoryCode());
-//
-//            Product savedProduct =  productRepository.save(product);
-//
-//            InventoryEvent event = new InventoryEvent(
-//                    savedProduct.getProductId(),
-//                    0,
-//                    "CREATE"
-//            );
-//
-//            rabbitTemplate.convertAndSend(
-//                    "inventory.exchange",
-//                    "inventory.update",
-//                    "CREATE"
-//            );
-//
-//            log.info("Inventory event sent for product ID: {}", savedProduct.getProductId());
-//
-//            response.setStatus(String.valueOf(HttpStatus.OK));
-//            response.setMessage("Success");
-//            response.setData(productRequest);
-//            log.info("[END - createProduct]");
-//            return response;
-//        } catch (Exception ex) {
-//            log.error("[createProduct] Error : {}", ex.getMessage(), ex);
-//            response.setStatus(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR));
-//            response.setMessage(ex.getMessage());
-//            response.setData(null);
-//            return response;
-//        }
-//    }
 
     @Override
     public Response createProduct(ProductRequest productRequest) {
@@ -191,9 +146,58 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Response searchByCodeProduct(CategoryRequest productRequest) {
+    public Response searchByCodeProduct(ProductSearch productSearch) {
         log.info("[START - searchByCodeProduct]");
+        Response response = new Response();
+
+        if (productSearch.getCodeProduct() == null) {
+            throw  new ProductExceptionHandler("Kode Produk wajib diisi", "codeProduct is Null", HttpStatus.BAD_REQUEST);
+        }
+
+        Product product = productRepository.findByCodeProduct(productSearch.getCodeProduct());
+        ProductResponse productResponse = new ProductResponse().builder()
+                .productName(product.getProductName())
+                .productCode(product.getCodeProduct())
+                .description(product.getDescription())
+                .thumbnail(product.getThumbnailProduct())
+                .price(product.getPrice())
+                .build();
+
+        response.setStatus(String.valueOf(HttpStatus.OK));
+        response.setMessage("Success");
+        response.setData(List.of(productResponse));
+
         log.info("[END - searchByCodeProduct]");
-        return null;
+        return response;
+    }
+
+    @Override
+    public Response filterProduct(ProductFilter productFilter) {
+        log.info("[START - filterProduct]");
+
+        Response response = new Response();
+
+        try {
+            if (productFilter.getMin() == null || productFilter.getMax() == null){
+                throw new ProductExceptionHandler("Invalid filter parameters", "Parameter min, max, or isDeleted cannot be null", HttpStatus.BAD_REQUEST);
+            }
+
+        List<Product> products = productRepository.findByPriceBetweenAndIsDeletedFalse(productFilter.getMin(), productFilter.getMax());
+            response.setStatus(String.valueOf(HttpStatus.OK));
+            response.setMessage("Success");
+            response.setData(products);
+        } catch (ProductExceptionHandler e){
+            log.error("ProductExceptionHandler: {}", e.getMessage());
+            response.setStatus(String.valueOf(e.getHttpStatus().value()));
+            response.setMessage(e.getMessage());
+            response.setData(null);
+        }catch (Exception e) {
+            log.error("Unexpected error: ", e);
+            response.setStatus(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()));
+            response.setMessage("Internal server error");
+            response.setData(null);
+        }
+        log.info("[END - filterProduct]");
+        return response;
     }
 }

@@ -1,7 +1,9 @@
 package com.example.product.controller;
 
 import com.example.product.dto.Response;
+import com.example.product.dto.product.ProductFilter;
 import com.example.product.dto.product.ProductRequest;
+import com.example.product.dto.product.ProductSearch;
 import com.example.product.service.ProductService;
 import com.example.product.service.RedisService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -162,26 +164,48 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+//    @PostMapping("/upload")
+//    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+//
+//        // 1. Check if file is empty
+//        if (file.isEmpty()) {
+//            return ResponseEntity.badRequest().body("File is empty");
+//        }
+//
+//        try {
+//            // 2. Save the file (simple version)
+//            String fileName = file.getOriginalFilename();
+//            Path path = Paths.get("uploads/" + fileName);
+//            Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+//
+//            // 3. Return success
+//            return ResponseEntity.ok("File uploaded: " + fileName);
+//
+//        } catch (Exception e) {
+//            return ResponseEntity.internalServerError().body("Upload failed: " + e.getMessage());
+//        }
+//    }
 
-        // 1. Check if file is empty
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("File is empty");
-        }
+    @PostMapping("/filter")
+    @Operation(summary = "Filter Products", description = "Find product by min and max range")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "500", description = "Internal Server Error")
+    })
+    public ResponseEntity<Response> filterProduct(@Valid @RequestBody ProductFilter productFilter){
+        log.info("HTTP FILTER PRODUCTS");
+        Response response = productService.filterProduct(productFilter);
+        log.info("HTTP FILTER PRODUCTS");
+        return ResponseEntity.ok(response);
+    }
 
-        try {
-            // 2. Save the file (simple version)
-            String fileName = file.getOriginalFilename();
-            Path path = Paths.get("uploads/" + fileName);
-            Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
-
-            // 3. Return success
-            return ResponseEntity.ok("File uploaded: " + fileName);
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Upload failed: " + e.getMessage());
-        }
+    @PostMapping("/search")
+    @Operation(summary = "Search Products", description = "Find product by Product Code")
+    public ResponseEntity<Response> searchProduct(@Valid @RequestBody ProductSearch productSearch){
+        log.info("HTTP SEARCH PRODUCTS");
+        Response response = productService.searchByCodeProduct(productSearch);
+        log.info("HTTP SEARCH PRODUCTS");
+        return ResponseEntity.ok(response);
     }
 
 }

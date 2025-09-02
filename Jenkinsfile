@@ -3,55 +3,39 @@ pipeline {
 
     environment {
         DOCKER_COMPOSE = '/usr/local/bin/docker-compose'
-        DOCKER_IMAGE = 'product-service:latest'
+        COMPOSE_PROJECT_NAME = 'product-service-api'
     }
 
     stages {
-        stage('🔄 Clean Workspace') {
-            steps {
-                cleanWs()
+            stage('Checkout') {
+                        steps {
+                            cleanWs()
+                            sh '''
+                                rm -rf product-service-api
+                                git clone -b master https://github.com/Ajiramadhani/product-service-api.git
+                                cd product-service-api
+                            '''
+                        }
             }
-        }
 
-        stage('🏗️ Build Docker Image') {
-            steps {
-                script {
-                    // Build image menggunakan Dockerfile
-                    docker.build("${DOCKER_IMAGE}")
+            stage('Build JAR') {
+                        steps {
+                            dir('product-service-api') {
+                                sh 'mvn clean package -DskipTests'
+                            }
+                        }
+                    }
+
+            stage('Build and Deploy') {
+                steps {
+                    sh '''
+                        mvn clean package -DskipTests
+                        docker-compose build
+                        docker-compose up -d
+                    '''
                 }
             }
         }
-
-        stage('🐳 Docker Compose Up') {
-            steps {
-                sh '''
-                    ${DOCKER_COMPOSE} down --remove-orphans || true
-                    ${DOCKER_COMPOSE} up -d --force-recreate
-
-                    # Tunggu services ready
-                    sleep 30
-                '''
-            }
-        }
-
-        stage('✅ Health Check') {
-            steps {
-                sh '''
-                    # Health check dengan retry
-                    for i in {1..10}; do
-                        if curl -s -f http://localhost:9014/actuator/health > /dev/null; then
-                            echo "✅ Health check passed!"
-                            exit 0
-                        fi
-                        echo "⏳ Waiting for services... ($i/10)"
-                        sleep 6
-                    done
-                    echo "❌ Health check failed after 60 seconds"
-                    exit 1
-                '''
-            }
-        }
-    }
 
     post {
         always {
@@ -65,11 +49,20 @@ pipeline {
             '''
         }
         failure {
-            echo '❌ Pipeline Failed! Cleaning up...'
+            echo '❌ Pipeline failed! Running cleanup for NEW containers...'
+
             sh '''
-                ${DOCKER_COMPOSE} down --remove-orphans --volumes || true
-                docker rmi -f ${DOCKER_IMAGE} || true
-                docker system prune -f || true
+                cd product-service-api && docker-compose down --remove-orphans || true
+
+                docker rm -f product-api-new mysqlserver1-new myredis-new myrabbitmq-new || true
+
+                docker network rm product-service-api_app-network || true
+
+                docker volume rm product-service-api_mysql_data_new || true
+                docker volume rm product-service-api_redis_data_new || true
+                docker volume rm product-service-api_rabbitmq_data_new || true
+
+                echo "✅ Cleaned up: product-api-new, mysqlserver1-new, myredis-new, myrabbitmq-new"
             '''
         }
     }

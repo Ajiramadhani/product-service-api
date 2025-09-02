@@ -1,5 +1,7 @@
 package com.example.product.service;
 
+import com.example.product.dto.Response;
+import com.example.product.dto.inventory.BulkInventoryRequest;
 import com.example.product.dto.inventory.InventoryEvent;
 import com.example.product.dto.inventory.InventoryRequest;
 import com.example.product.dto.inventory.InventoryResponse;
@@ -14,6 +16,7 @@ public interface InventoryService {
     List<InventoryResponse> getAllInventory();
     InventoryResponse reserveStock(Long productId, Integer quantity);
     InventoryResponse releaseReservation(Long productId, Integer quantity);
+    Response bulkUpdateInventory(BulkInventoryRequest bulkInventoryRequest);
 
     void createInventoryFromEvent(InventoryEvent event);
     void updateInventoryFromEvent(InventoryEvent event);

@@ -1,6 +1,7 @@
 package com.example.product.controller;
 
 import com.example.product.dto.Response;
+import com.example.product.dto.inventory.BulkInventoryRequest;
 import com.example.product.dto.inventory.InventoryRequest;
 import com.example.product.service.InventoryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -147,5 +148,14 @@ public class InventoryController {
 
             return ResponseEntity.internalServerError().body(response);
         }
+    }
+
+    @PostMapping("/bulk-update")
+    @Operation(summary = "Bulk update inventory", description = "Update multiple inventory records in one request")
+    public ResponseEntity<Response> bulkUpdateInventory(@Valid @RequestBody BulkInventoryRequest request){
+        log.info("HTTP BULK UPDATE INVENTORY: {} operations", request.getOperations().size());
+        Response response = inventoryService.bulkUpdateInventory(request);
+        log.info("HTTP RESPONSE : {}", HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
