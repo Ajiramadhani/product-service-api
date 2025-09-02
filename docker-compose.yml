@@ -22,7 +22,7 @@ services:
       mysql-new:
         condition: service_healthy
       redis-new:
-        condition: service_healthy
+        condition: service_started
       rabbitmq-new:
         condition: service_started
     networks:
